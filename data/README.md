@@ -9,7 +9,7 @@ data/startup_failures.csv
 ```
 
 <!-- TODO: add the exact download link (e.g. the Kaggle page) you used. -->
-Source: _add link here_
+Source: Crunchbase start-up dataset (2015 export)
 
 Expected columns: `permalink`, `name`, `homepage_url`, `category_list`, `funding_total_usd`, `status`, `country_code`, `state_code`, `region`, `city`, `funding_rounds`, `founded_at`, `first_funding_at`, `last_funding_at`.
 
