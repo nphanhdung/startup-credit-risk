@@ -38,22 +38,53 @@ Raw Crunchbase data ──► Cleaning & features ──► Random forest ──
 | D | 750–850 | 25% | 18–24 months | +20% |
 | E, F | below 750 | not eligible | – | – |
 
-## Results (original course submission)
+## Results
 
-- **AUC ≈ 0.78** (Gini ≈ 0.56) on held-out data, compared with 0.50 for random guessing.
-- **Calibration** lowered the Brier score from 0.063 to 0.062. A naive model scores about 0.07.
-- **Strongest predictors:** time since the last funding round, business age and total funding.
-- **Risk buckets separate risk clearly.** The observed failure rate rises from about 2% in bucket A to about 83% in bucket F.
-- **Expected loss** across the eligible portfolio is about 4% of the amount lent.
+All numbers are measured on a **held-out test set** of about 8,100 start-ups that the model never saw during training or calibration. The full scope is 40,473 start-ups, with a 7.3% failure rate.
 
-The model rests on public funding data only, with no financial statements or repayment history, so it shows the method rather than giving a production-ready credit model.
+**Model performance**
 
-> The numbers above come from the original course analysis. This version fixes several issues (see [Changes](#changes-from-the-course-version)), so a fresh run will give slightly different figures. Run `python -m startup_credit_risk.pipeline` to reproduce them.
+| Metric | Uncalibrated | Calibrated | Benchmark |
+|---|---|---|---|
+| AUC | 0.761 | 0.757 | 0.50 (random guessing) |
+| Gini | 0.52 | 0.51 | 0 |
+| Brier score | 0.0636 | **0.0626** | 0.0676 (always predict the average) |
+
+Calibration improves the Brier score. That means the predicted probabilities are closer to the real failure rates, which matters more for pricing loans than ranking alone.
+
+**Risk buckets: predicted vs. observed failure rate (test set)**
+
+| Bucket | Start-ups | Avg. score | Predicted failure | Observed failure |
+|---|---|---|---|---|
+| A | 5,069 | 973 | 2.7% | 2.9% |
+| B | 817 | 928 | 7.2% | 8.3% |
+| C | 884 | 876 | 12.4% | 11.3% |
+| D | 922 | 825 | 17.5% | 17.4% |
+| E | 318 | 741 | 26.0% | 28.0% |
+| F | 85 | 622 | 37.8% | 30.6% |
+
+In buckets A–E, the observed failure rates follow the predictions closely, so the scale can be used to price risk. Bucket F is small (85 companies), so its rate is uncertain.
+
+**Strongest predictors:** time since the last funding round, business age, total funding, and time from founding to first funding. Start-ups that have not raised money for a long time are the most likely to close.
+
+**Loan portfolio (all eligible start-ups)**
+
+| Bucket | Start-ups | Lending (USD bn) | Expected loss | Risk premium |
+|---|---|---|---|---|
+| A | 29,374 | 313.5 | 2.5% | 3% |
+| B | 3,281 | 17.9 | 7.3% | 8% |
+| C | 3,025 | 9.4 | 12.3% | 15% |
+| D | 2,204 | 3.3 | 17.1% | 20% |
+| **Total** | **37,884** | **344.1** | **3.2%** | |
+
+In every bucket the risk premium covers the expected loss. About 91% of the lending goes to the lowest-risk bucket A.
+
+**Limitations.** The model uses public funding data only, with no financial statements or repayment history. "Closed" is used in place of an actual loan default. The data ends in 2015. The project shows the method; it is not a production-ready credit model.
 
 ## How to run
 
 ```bash
-git clone https://github.com/<your-username>/startup-credit-risk.git
+git clone https://github.com/nphanhdung/startup-credit-risk.git
 cd startup-credit-risk
 pip install -e ".[dev]"
 
@@ -92,7 +123,7 @@ tests/              unit and end-to-end tests on synthetic data
 ## Changes from the course version
 
 - **Calibration.** The forest is now trained on the training set and calibrated on a separate calibration set. Before, both steps used only the 20% calibration set.
-- **Honest validation.** Bucket failure rates are measured on the untouched test set, not on all the data.
+- **Honest validation.** Bucket failure rates are measured on the untouched test set, not on all the data. The course version reported 83% observed failure in bucket F, but that was measured partly on training data; on new data it is about 31%. Its AUC of 0.78 dropped to 0.76 for the same reason.
 - **Reproducibility.** Time-based features are measured up to the last date in the data, not today's date, so results no longer change from day to day.
 - **Missing categories.** Companies with no category are now labelled "Other". Before, they were put in "Administrative Services" by mistake.
 - **Class weight.** It is computed from the training data instead of being hard-coded.
