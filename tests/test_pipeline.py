@@ -30,8 +30,9 @@ def test_buckets_cover_every_score():
 
 
 def test_pipeline_runs_end_to_end(raw_csv, tmp_path):
-    results = run(raw_csv, tmp_path / "out")
+    results = run(raw_csv, tmp_path / "out", tmp_path / "figures")
     metrics = results["metrics"]
     assert 0.5 < metrics["calibrated"]["auc"] <= 1
-    assert (tmp_path / "out" / "figures" / "marci_chart.png").exists()
+    for name in ["marci_chart", "portfolio_pies", "industry_failure_rates", "calibration"]:
+        assert (tmp_path / "figures" / f"{name}.png").exists()
     assert set(results["portfolio"].index) <= set(config.LOAN_PRODUCTS)

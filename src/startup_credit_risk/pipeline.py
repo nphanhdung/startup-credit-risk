@@ -15,9 +15,9 @@ from . import model, plots, products, scoring
 from .preprocessing import build_dataset
 
 
-def run(data_path: str | Path, out_dir: str | Path = "outputs") -> dict:
+def run(data_path: str | Path, out_dir: str | Path = "outputs", fig_dir: str | Path = "figures") -> dict:
     out = Path(out_dir)
-    fig_dir = out / "figures"
+    fig_dir = Path(fig_dir)
     out.mkdir(parents=True, exist_ok=True)
 
     df = build_dataset(data_path)
@@ -52,11 +52,13 @@ def run(data_path: str | Path, out_dir: str | Path = "outputs") -> dict:
     importances.to_csv(out / "feature_importance.csv", header=["importance"])
 
     plots.outcome_boxplots(df, fig_dir / "outcome_boxplots.png")
+    plots.industry_failure_rates(df, fig_dir / "industry_failure_rates.png")
     plots.marci_chart(df, fig_dir / "marci_chart.png")
     plots.calibration(splits.y_test, {"Uncalibrated": p_base, "Isotonic calibration": p_cal}, fig_dir / "calibration.png")
     plots.roc(splits.y_test, p_cal, fig_dir / "roc.png")
     plots.importance(importances, fig_dir / "feature_importance.png")
     plots.score_distribution(scored["score"].to_numpy(), fig_dir / "score_distribution.png")
+    plots.portfolio_pies(portfolio, fig_dir / "portfolio_pies.png")
 
     return {"metrics": metrics, "buckets_test": buckets_test, "portfolio": portfolio, "importance": importances}
 
@@ -64,9 +66,10 @@ def run(data_path: str | Path, out_dir: str | Path = "outputs") -> dict:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--data", default="data/startup_failures.csv", help="path to the raw CSV")
-    parser.add_argument("--out", default="outputs", help="folder for results and figures")
+    parser.add_argument("--out", default="outputs", help="folder for result tables")
+    parser.add_argument("--figures", default="figures", help="folder for the figures shown in the README")
     args = parser.parse_args()
-    results = run(args.data, args.out)
+    results = run(args.data, args.out, args.figures)
 
     pd.set_option("display.width", 120)
     print(json.dumps(results["metrics"], indent=2))
